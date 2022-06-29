@@ -1,0 +1,153 @@
+import string
+# Роторы
+rotors = {0: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+          1: 'EKMFLGDQVZNTOWYHXUSPAIBRCJ',
+          2: 'AJDKSIRUXBLHWTMCQGZNPYFVOE',
+          3: 'BDFHJLCPRTXVZNYEIWGAKMUSQO',
+          4: 'ESOVPZJAYQUIRHXLNFTGKDCMWB',
+          5: 'VZBRGITYUPSDNHLXAWMJQOFECK',
+          6: 'JPGVOUMFYQBENHZRDKASXLICTW',
+          7: 'NZJHGRCXMYSWBOUFAIVLPEKQDT',
+          8: 'FKQHTLXOCBJSPDZRAMEWNIUYGV',
+          9: 'LEYJVCNIXWPBQMDRTAKZGFUHOS',
+          10: 'FSOKANUERHMBTIYCWLQPZXVGJD'
+          }
+
+# Рефлекторы
+reflectors = {0: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+              1: 'YRUHQSLDPXNGOKMIEBFZCWVJAT',
+              2: 'FVPJIAOYEDRZXWGCTKUQSBNMHL',
+              3: 'ENKQAUYWJICOPBLMDXZVFTHRGS',
+              4: 'RDOBJNTKVEHMLFCWZAXGYIPSUQ'
+              }
+
+# Смещения
+shifters = {1: (16,),
+            2: (4,),
+            3: (21,),
+            4: (9,),
+            5: (25,),
+            6: (25, 12),
+            7: (25, 12),
+            8: (25, 12)
+            }
+
+# Шифрование через ротор
+def rotor(symbol, n, reverse=False):
+    rotor_in, rotor_out = (rotors[n], rotors[0]) if reverse else (rotors[0], rotors[n])
+    return rotor_out[rotor_in.index(symbol)]
+
+# Шифрование через рефлектор
+def reflector(symbol, n):
+    reflector_in, reflector_out = reflectors[n], reflectors[0]
+    return reflector_out[reflector_in.index(symbol)]
+
+# Шифрование Цезарь
+def caesar(text, key, alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ'):
+    t = ''.join([i.upper().strip(".,'’!?") for i in text.split()])
+    ans = ''
+    for i in t:
+        if i == "'":
+            continue
+        ans += alphabet[(alphabet.find(i) + key) % len(alphabet)]
+    return ans
+
+# Проверка коммутаторов
+def is_commutators_correct(pairs):
+    a = ''.join(pairs.upper().split())
+    if len(a) % 2 == 1 or len(a) != len(set(a)):
+        return False
+    return True
+
+# Коммутация
+def commutation(char, pairs):
+    if not pairs or char not in pairs.upper():
+        return char
+    a = ''.join(pairs.upper().split())
+    coord = a.find(char)
+    return a[coord + 1] if coord % 2 == 0 else a[coord - 1]
+
+# Шифрование Энигма
+def enigma(text, ref=0, rot1=0, shift1=0, rot2=0, shift2=0, rot3=0, shift3=0, pairs=""):
+    if not is_commutators_correct(pairs):
+        return 'Извините, невозможно произвести коммутацию'
+    ans = ''
+    text = ''.join(list(map(lambda x: x.strip(string.punctuation), text.upper().split())))
+    rots = [rot3, rot2, rot1]
+    shifts = [shift3, shift2, shift1]
+    for i in text:
+        char = i
+        char = commutation(char, pairs)
+        for j in range(-1, -len(rots), -1):
+            if shifts[j - 1] in shifters[rots[j - 1]]:
+                shifts[j] += 1
+                if j == -1:
+                    shifts[-2] += 1
+        shifts[0] = (shifts[0] + 1) % 26 
+        for r, s in zip(rots, shifts):
+            char = caesar(char, s)
+            char = rotor(char, r)
+            char = caesar(char, -s)
+        char = reflector(char, ref)
+        for r, s in zip(rots[::-1], shifts[::-1]):
+            char = caesar(char, s)
+            char = rotor(char, r, reverse=True)
+            char = caesar(char, -s)
+        char = commutation(char, pairs)
+        ans += char
+    return ans
+
+while True:
+    flag = False
+    text_user = input('Введите текст для шифрования на английском языке:\n')
+    print(f'Тескт для шифрования: {text_user}')
+    print('-' * 50)
+    ref_user = int(input('Введите номер рефлектора: (от 1 до 4)\n'))
+    print(f'Введенный рефлектор: {ref_user}')
+    print('-' * 50)
+    rot1_user = int(input('Введите номер ротора 1: (от 1 до 10)\n'))
+    print(f'Введенный ротор 1: {rot1_user}')
+    print('-' * 50)
+    shift1_user = int(input('Введите смещение для ротора 1 (от 1 до 25)\n'))
+    print(f'Введенное смещение для ротора 1: {shift1_user}')
+    print('-' * 50)
+    rot2_user = int(input('Введите номер ротора 2 (от 1 до 10)\n'))
+    print(f'Введенный ротор 2: {rot2_user}')
+    print('-' * 50)
+    shift2_user = int(input('Введите смещение для ротора 2 (от 1 до 25)\n'))
+    print(f'Введенное смещение для ротора 2: {shift2_user}')
+    print('-' * 50)
+    rot3_user = int(input('Введите номер ротора 3 (от 1 до 10)\n'))
+    print(f'Введенный ротор 3: {rot3_user}')
+    print('-' * 50)
+    shift3_user = int(input('Введите смещение для ротора 3 (от 1 до 25)\n'))
+    print(f'Введенное смещение для ротора 3: {shift3_user}')
+    print('-' * 50)
+    pairs_user = input('Введите пары букв для коммутации без повторов через пробел\n')
+    print(f'Введенные пары для коммутации: {pairs_user}')
+    print('-' * 50)
+    while True:
+        quest = input('Введенные параметры верные? (Y / N)\n')
+        if quest.upper() == 'N':
+            flag = True
+            break
+        elif quest.upper() != 'Y':
+            print('Введите верный ответ!')
+            continue
+        break
+    if flag:
+        continue
+    print('-' * 50)
+    print(enigma(text_user, ref_user, rot1_user, shift1_user, rot2_user, shift2_user, rot3_user, shift3_user, pairs_user))
+    print('-' * 50)
+    while True:
+        quest_for_exit = input('Требуется шифровка еще одного текста? (Y / N)\n')
+        if quest_for_exit.upper() == 'N':
+            flag = True
+            break
+        elif quest_for_exit.upper() != 'Y':
+            print('Введите верный ответ!')
+            continue
+        break
+    if flag:
+        break
